@@ -1,0 +1,30 @@
+{
+  "name": "midwayuartnode-pesiv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "NODE_ENV=production node ./bootstrap.js",
+    "dev": "cross-env NODE_ENV=local midway-bin dev --ts  --entryFile=bootstrap.js",
+    "build": "midway-bin build -c",
+    "build:docker": "npm run build && sudo docker build -t midwayuartnode-pesiv .",
+    "run:docker": "sudo docker stop midwayuartnode-pesiv && sudo docker rm midwayuartnode-pesiv && sudo docker run -itd --name midwayuartnode-pesiv --restart always --init -p 9000:9000 midwayuartnode-pesiv"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@midwayjs/cli": "^1.2.76",
+    "@midwayjs/core": "^2.11.4",
+    "@midwayjs/decorator": "^2.11.1",
+    "@types/crc": "^3.4.0",
+    "cross-env": "^7.0.3",
+    "types-uart": "^1.1.2"
+  },
+  "dependencies": {
+    "@cairui/midway-io.client": "^1.0.3",
+    "@cairui/midway-tcpserver": "^1.0.2",
+    "@midwayjs/bootstrap": "^2.11.4",
+    "axios": "^0.21.1",
+    "crc": "^3.8.0"
+  }
+}
