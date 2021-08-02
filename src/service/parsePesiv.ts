@@ -19,7 +19,7 @@ interface pesiv {
     /**
      * 别名
      */
-    DeviceContent: DeviceContent 
+    DeviceContent: DeviceContent
     /**
      * 别名
      */
@@ -114,6 +114,7 @@ export class ParsePesiv {
     }
 
     getD(): pesiv[] {
+
         return [
             {
                 DefineName: "UPS_BRAND",
@@ -588,5 +589,14 @@ export class ParsePesiv {
                 unit: ""
             }
         ]
+    }
+
+    /**
+     * 获取
+     * @returns 
+     */
+    getMap(): Map<DefineName, pesiv> {
+        const dataArr = this.getD()
+        return new Map(dataArr.map(el => [el.DefineName, el]))
     }
 }

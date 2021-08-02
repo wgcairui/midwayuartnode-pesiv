@@ -81,10 +81,6 @@ export class IOClientControll {
                 resolve()
             }, 10000)
         })
-
-        console.log(keys);
-
-
         return keys
     }
 
@@ -110,13 +106,11 @@ export class IOClientControll {
         if (Buffer.isBuffer(buffer)) {
             // 检测接受的数据是否合法
             const msg = buffer.toString()
-            console.log({ buffer, msg });
-
             result.ok = msg === "ACK" ? 1 : 0;
 
             result.msg = msg === "ACK" ? '操作成功' : '操作失败'
         }
-        console.log({ Query, result });
+        // console.log({ Query, result });
         return [Query.events, result]
     }
 

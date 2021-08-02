@@ -16,7 +16,7 @@ export class ioClientService {
     /**
      * 设备上线
      * @param mac 
-     * @param stat 
+     * @param stat 是否重新上线
      */
     terminalOn(mac: string | string, stat: boolean = true) {
         console.log(`send ${mac} 上线事件`);

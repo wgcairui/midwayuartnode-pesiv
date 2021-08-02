@@ -1,4 +1,4 @@
-import { Provide, Init, Autoload, Config, Inject } from "@midwayjs/decorator"
+import { Provide, Init, Autoload, Scope, ScopeEnum, Config, Inject } from "@midwayjs/decorator"
 import { createSocket, Socket, RemoteInfo } from "dgram"
 import { Util } from "./util"
 import { ParsePesiv } from "./parsePesiv"
@@ -13,6 +13,7 @@ enum typeEnum {
 
 
 @Provide()
+@Scope(ScopeEnum.Singleton)
 @Autoload()
 export class UdpServer {
 
@@ -32,13 +33,32 @@ export class UdpServer {
     ioClientService: ioClientService
 
     server: Socket
+
+    /**
+     * 缓存每个卡的连接信息
+     */
     cache: Map<string, RemoteInfo>
 
+    /**
+    * 每个pesiv卡的数据
+    */
+    pesivData: Map<string, string>
+
+    /**
+     * 设备心跳时间戳
+     */
+    heartTimestamp: Map<string, number>
 
     @Init()
     async init() {
 
         this.cache = new Map()
+        this.pesivData = new Map()
+        this.heartTimestamp = new Map()
+
+        setInterval(() => {
+            this.checkHeart()
+        }, 2e4)
 
         this.server = createSocket("udp4")
         this.server
@@ -62,12 +82,19 @@ export class UdpServer {
                         // 心跳包
                         case "heartBeat":
                             {
+                                const address = this.cache.get(mac)
+                                if (address) {
+                                    const time = this.heartTimestamp.get(mac)
+                                    if (!time) {
+                                        this.ioClientService.terminalOn(mac)
+                                    }
 
-                                if (!this.cache.has(mac)) {
-                                    console.log(`${mac} connecting`);
-                                    this.ioClientService.terminalOn(mac)
+                                } else {
+                                    console.log(`${mac} connecting in ${info.address}:${info.port}`);
+                                    this.ioClientService.terminalOn(mac, false)
                                     this.Fetch.dtuInfo({ mac, ip: info.address, port: info.port })
                                 }
+                                this.heartTimestamp.set(mac, Date.now())
                                 this.cache.set(mac, info)
 
                             }
@@ -77,58 +104,137 @@ export class UdpServer {
                         case "data":
                             {
                                 const d = data.slice(6)
-                                const utf8 = d.toString()
-                               /*
-                               console.log({
-                                    d, utf8
-                                });
+                                /* const utf8 = d.toString()
 
-                                 if (info.address === "121.43.193.235") {
-                                    console.log({
-                                        msg
-                                    });
+                                console.log({
+                                    msg,
+                                    data,
+                                    rttype: data[1],
+                                    datatype: data[3],
+                                    d,
+                                    utf8
+                                }); */
+                                /*
+                                                                 if (info.address === "121.43.193.235") {
+                                                                    console.log({
+                                                                        msg
+                                                                    });
+                                
+                                                                } else {
+                                                                    this.server.send(msg, 14197, "www.pesiv.com")
+                                                                } */
+                                // 根据数据字段00 14 01 28 55 9b ed f1 5e 01 [[05]] 00 c8 00 03 41 43 4b af 37的值判断返回类型
+                                // 0x03是运行数据
+                                // 0x05是设置之后返回的ACK确认
+                                switch (data[1]) {
+                                    case 0x03:
+                                        {
+                                            // 根据数据字段00 14 01 28 55 9b ed f1 5e 01 05 00 [[c8]] 00 03 41 43 4b af 37的值判断返回类型
+                                            // 0x00是所有运行数据,10min一次
+                                            // 0x23是QMOD运行状态数据
+                                            // 0xe8是QGS数据
 
-                                } else {
-                                    this.server.send(msg, 14197, "www.pesiv.com")
-                                } */
+                                            const pesivMap = this.ParsePesiv.getMap()
+                                            const contents: Uart.IntructQueryResult[] = []
 
-                                if (d.length > 100) {
-                                    const pesivArguments = this.ParsePesiv.getD()
+                                            switch (data[3]) {
+                                                case 0x00:
+                                                    {
+                                                        this.pesivData.set(mac, d.toString())
+                                                    }
+                                                    break;
 
-                                    // 格式化pesiv卡上传的数据,转换成透传平台可以识别的格式
-                                    const data = pesivArguments
-                                        .map(obj => {
-                                            return utf8.slice(obj.StartAddr, obj.StartAddr + obj.DeviceLength).replace(/#/g, '')
-                                        })
-                                        .join(" ")
+                                                case 0x23:
+                                                    {
+                                                        contents.push({
+                                                            content: "QMOD",
+                                                            buffer: Buffer.from(d.toString("utf8") + " \r", "utf8").toJSON()
+                                                        })
+                                                    }
+                                                    break
 
-                                    const { StartAddr, DeviceLength } = pesivArguments[pesivArguments.length - 1]
-                                    const QWS = utf8.slice(StartAddr, StartAddr + DeviceLength).replace(/#/g, '')
-                                    this.Fetch.queryData({
-                                        mac,
-                                        pid: 0,
-                                        type: 232,
-                                        protocol: 'Pesiv卡',
-                                        content: "pesiv",
-                                        mountDev: "peisv",
-                                        Interval: 6e5,
-                                        timeStamp: Date.now(),
-                                        time: new Date().toString(),
-                                        useBytes: 0,
-                                        useTime: 6e5,
-                                        contents: [
-                                            {
-                                                content: "pesiv",
-                                                buffer: Buffer.from(data + "\r", "utf8").toJSON()
-                                            },
-                                            {
-                                                content: "QWS",
-                                                buffer: Buffer.from(QWS + "\r", "utf8").toJSON()
+                                                case 0xe8:
+                                                    {
+                                                        contents.push({
+                                                            content: "QGS_B9TOB0",
+                                                            buffer: Buffer.from(d.toString("utf8") + " \r", "utf8").toJSON()
+                                                        })
+                                                    }
+                                                    break
                                             }
-                                        ]
-                                    })
-                                } else {
-                                    this.server.emit(mac, d)
+
+                                            const dataStr = this.pesivData.get(mac)
+                                            if (dataStr) {
+                                                const pesivArguments = this.ParsePesiv.getD()
+
+                                                // 格式化pesiv卡上传的数据,转换成透传平台可以识别的格式
+                                                const dataStrParse = pesivArguments
+                                                    .map(obj => {
+                                                        return dataStr.slice(obj.StartAddr, obj.StartAddr + obj.DeviceLength).replace(/#/g, '')
+                                                    })
+                                                    .join(" ")
+
+                                                // 列出QWS参数
+                                                const UPS_QWS = pesivMap.get("UPS_QWS")
+                                                const QWS = dataStr.slice(UPS_QWS.StartAddr, UPS_QWS.StartAddr + UPS_QWS.DeviceLength).replace(/#/g, '')
+
+                                                if (contents.findIndex(el => el.content === "QGS_B9TOB0") === -1) {
+                                                    // 列出QGS状态
+                                                    const UPS_QGS_B9TOB0 = pesivMap.get("UPS_QGS_B9TOB0")
+                                                    const QGS = dataStr.slice(UPS_QGS_B9TOB0.StartAddr, UPS_QGS_B9TOB0.StartAddr + UPS_QGS_B9TOB0.DeviceLength).replace(/#/g, '')
+                                                    contents.push(
+
+                                                        {
+                                                            content: "QGS_B9TOB0",
+                                                            buffer: Buffer.from(QGS + " \r", "utf8").toJSON()
+                                                        }
+                                                    )
+                                                }
+
+                                                if (contents.findIndex(el => el.content === "QMOD") === -1) {
+                                                    // 列出UPS工作状态
+                                                    const UPS_QMOD = pesivMap.get("UPS_QMOD")
+                                                    const QMOD = dataStr.slice(UPS_QMOD.StartAddr, UPS_QMOD.StartAddr + UPS_QMOD.DeviceLength).replace(/#/g, '')
+                                                    contents.push(
+                                                        {
+                                                            content: "QMOD",
+                                                            buffer: Buffer.from(QMOD + " \r", "utf8").toJSON()
+                                                        },
+                                                    )
+                                                }
+
+                                                this.Fetch.queryData({
+                                                    mac,
+                                                    pid: 0,
+                                                    type: 232,
+                                                    protocol: 'Pesiv卡',
+                                                    content: "pesiv",
+                                                    mountDev: "peisv",
+                                                    Interval: 6e5,
+                                                    timeStamp: Date.now(),
+                                                    time: new Date().toString(),
+                                                    useBytes: 0,
+                                                    useTime: 6e5,
+                                                    contents: [
+                                                        {
+                                                            content: "pesiv",
+                                                            buffer: Buffer.from(dataStrParse + " \r", "utf8").toJSON()
+                                                        },
+                                                        {
+                                                            content: "QWS",
+                                                            buffer: Buffer.from(QWS + " \r", "utf8").toJSON()
+                                                        },
+                                                        ...contents
+                                                    ]
+                                                })
+                                            }
+
+                                        }
+                                        break;
+
+                                    case 0x05:
+                                        this.server.emit(mac, d)
+                                        break
                                 }
                             }
                             break
@@ -175,6 +281,20 @@ export class UdpServer {
         } else {
             return '设备未上线'
         }
+    }
+
+
+    /**
+     * 检查设备是否掉线
+     */
+    private checkHeart() {
+        const now = Date.now()
+        this.heartTimestamp.forEach((p, mac) => {
+            if (now - p > 4e4) {
+                this.heartTimestamp.delete(mac)
+                this.ioClientService.terminalOff(mac)
+            }
+        })
     }
 
 }
