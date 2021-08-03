@@ -59,7 +59,6 @@ export class IOClientControll {
      */
     @OnIOMessage(EVENT.registerSuccess)
     @OnIOEmit(EVENT.ready)
-    @OnIOEmit(EVENT.terminalOn)
     async register(data: registerConfig) {
         console.log({ data });
 
@@ -81,6 +80,7 @@ export class IOClientControll {
                 resolve()
             }, 10000)
         })
+        this.ctx.terminalOn(keys as any)
         return keys
     }
 

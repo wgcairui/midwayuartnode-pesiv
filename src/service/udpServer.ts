@@ -245,7 +245,7 @@ export class UdpServer {
             })
 
 
-        this.server.bind(this.config.port)
+        this.server.bind(this.config.port,"0.0.0.0")
     }
 
 
