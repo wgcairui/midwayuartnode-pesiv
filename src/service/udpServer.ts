@@ -75,7 +75,7 @@ export class UdpServer {
                 // 数据实际长度必须等于头申明的长度
                 if (msg.readInt16BE() === msg.length) {
                     const type = typeEnum[msg[2]]
-                    const mac = msg.toString("hex", 3, 9)
+                    const mac = msg.toString("hex", 3, 9).toLocaleUpperCase()
                     const data = msg.slice(9, msg.length - 2)
                     // 判断数据类型
                     switch (type) {
