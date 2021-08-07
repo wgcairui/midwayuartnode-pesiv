@@ -80,7 +80,9 @@ export class IOClientControll {
                 resolve()
             }, 10000)
         })
-        this.ctx.terminalOn(keys as any)
+        if (keys.length > 0) {
+            this.ctx.terminalOn(keys as any)
+        }
         return keys
     }
 

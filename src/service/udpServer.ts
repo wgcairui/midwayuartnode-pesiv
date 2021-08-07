@@ -245,7 +245,7 @@ export class UdpServer {
             })
 
 
-        this.server.bind(this.config.port,"0.0.0.0")
+        this.server.bind(this.config.port, "0.0.0.0")
     }
 
 
@@ -260,7 +260,7 @@ export class UdpServer {
         const info = this.cache.get(mac)
         if (info) {
             // 00 12 01 28 55 9b ed f1 5e 01 05 00 cc 00 01 31 af f7
-            const d = Buffer.from(`01${mac}010500${oprate}000131`, 'hex')
+            const d = Buffer.from(`01${mac.toLocaleLowerCase()}010500${oprate}000131`, 'hex')
             const len = Buffer.allocUnsafe(2)
             len.writeInt16BE(d.length + 4)
             const data = Buffer.concat([len, d])
@@ -293,6 +293,7 @@ export class UdpServer {
             if (now - p > 4e4) {
                 this.heartTimestamp.delete(mac)
                 this.ioClientService.terminalOff(mac)
+                this.cache.delete(mac)
             }
         })
     }

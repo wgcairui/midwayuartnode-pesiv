@@ -27,9 +27,9 @@ export class ioClientService {
     /**
      * 设备离线
      * @param mac 
-     * @param stat 
+     * @param stat 是否主动离线
      */
-    terminalOff(mac: string | string, stat: boolean = true) {
+    terminalOff(mac: string | string, stat: boolean = false) {
         console.log(`send ${mac} 离线事件`);
         this.ioClient.io.emit(EVENT.terminalOff, mac, stat)
     }
