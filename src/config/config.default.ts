@@ -2,7 +2,7 @@ import { ioConfig } from "@cairui/midway-io.client"
 import { serverOptions } from "../interface"
 
 export const io: ioConfig = {
-    uri: "http://uart.ladishb.com:9010/node",
+    uri: "http://172.16.17.77:9010/node",
     opts: {
         path: "/client"
     }
