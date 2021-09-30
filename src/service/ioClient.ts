@@ -19,7 +19,7 @@ export class ioClientService {
      * @param stat 是否重新上线
      */
     terminalOn(mac: string | string, stat: boolean = true) {
-        console.log(`send ${mac} 上线事件`);
+        console.log(`${new Date().toLocaleString()}::send ${mac} 上线事件`);
         this.ioClient.io.emit(EVENT.terminalOn, mac, stat)
     }
 
@@ -30,7 +30,7 @@ export class ioClientService {
      * @param stat 是否主动离线
      */
     terminalOff(mac: string | string, stat: boolean = false) {
-        console.log(`send ${mac} 离线事件`);
+        console.log(`${new Date().toLocaleString()}::send ${mac} 离线事件`);
         this.ioClient.io.emit(EVENT.terminalOff, mac, stat)
     }
 

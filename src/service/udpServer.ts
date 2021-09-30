@@ -90,7 +90,7 @@ export class UdpServer {
                                     }
 
                                 } else {
-                                    console.log(`${mac} connecting in ${info.address}:${info.port}`);
+                                    console.log(`${new Date().toLocaleString()}::${mac} connecting in ${info.address}:${info.port}`);
                                     this.ioClientService.terminalOn(mac, false)
                                     this.Fetch.dtuInfo({ mac, ip: info.address, port: info.port })
                                 }
