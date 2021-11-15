@@ -285,17 +285,16 @@ export class UdpServer {
 
 
     /**
-     * 检查设备是否掉线
+     * 检查设备是否掉线 90秒
      */
     private checkHeart() {
         const now = Date.now()
         this.heartTimestamp.forEach((p, mac) => {
-            if (now - p > 4e4) {
+            if (now - p > 9e4) {
                 this.heartTimestamp.delete(mac)
                 this.ioClientService.terminalOff(mac)
                 this.cache.delete(mac)
             }
         })
     }
-
 }
