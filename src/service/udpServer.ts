@@ -285,12 +285,12 @@ export class UdpServer {
 
 
     /**
-     * 检查设备是否掉线 90秒
+     * 检查设备是否掉线 180秒
      */
     private checkHeart() {
         const now = Date.now()
         this.heartTimestamp.forEach((p, mac) => {
-            if (now - p > 9e4) {
+            if (now - p > 180e3) {
                 this.heartTimestamp.delete(mac)
                 this.ioClientService.terminalOff(mac)
                 this.cache.delete(mac)
