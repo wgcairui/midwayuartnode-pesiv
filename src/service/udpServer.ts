@@ -288,8 +288,9 @@ export class UdpServer {
      * 检查设备是否掉线 180秒
      */
     private checkHeart() {
-        const now = Date.now()
+        
         this.heartTimestamp.forEach((p, mac) => {
+            const now = Date.now()
             if (now - p > 180e3) {
                 this.heartTimestamp.delete(mac)
                 this.ioClientService.terminalOff(mac)
