@@ -202,7 +202,7 @@ export class UdpServer {
                                                         },
                                                     )
                                                 }
-
+                                                console.log(`${new Date().toLocaleString()}==Mac:${mac}  上传新数据`)
                                                 this.Fetch.queryData({
                                                     mac,
                                                     pid: 0,
